@@ -2,4 +2,4 @@
 # name: printf
 # key: pr
 # --
-printf("${1:format string}"${2: ,a0,a1});
+printf("\033[31m%s:(%d)\033[0m\n",__FUNCTION__,__LINE__);/*red*/
