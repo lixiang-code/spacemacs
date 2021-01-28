@@ -35,7 +35,8 @@
         org
         (orgit :requires org)
         smeargle
-        transient))
+        transient
+        git-gutter))
 
 
 (defun git/pre-init-golden-ratio ()
@@ -362,3 +363,14 @@
         "c" 'forge-post-submit
         "k" 'forge-post-cancel
         "a" 'forge-post-cancel))))
+
+(defun git/init-git-gutter ()
+  (use-package git-gutter
+    :defer t
+    :init
+    (custom-set-variables
+     '(git-gutter:window-width 2)
+     '(git-gutter:modified-sign "☁")
+     '(git-gutter:added-sign "☀")
+     '(git-gutter:deleted-sign "☂"))
+    ))
