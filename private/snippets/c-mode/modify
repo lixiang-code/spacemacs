@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: debug
+# key: modi
+# --
+/* CAMEOTAG:Modify by lixiang on `(format-time-string "%Y-%m-%d" (current-time))`
+ * $1
+ * Cause: $2
+ * Solution: $3
+ */

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: printf
+# key: red
+# --
+printf("\033[31m%s:(%d):${1:%s}\033[0m\n",__FUNCTION__,__LINE__${2});/*red*/
