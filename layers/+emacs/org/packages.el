@@ -834,7 +834,9 @@ Headline^^            Visit entry^^               Filter^^                    Da
       (spacemacs//init-leader-mode-map 'org-journal-mode 'spacemacs-org-journal-mode-map))))
 
 (defun org/init-ox-hugo ()
-  (use-package ox-hugo :after ox))
+  (use-package ox-hugo
+    :ensure t
+    :after ox))
 
 (defun org/init-ox-jira ()
   (use-package ox-jira :after ox))

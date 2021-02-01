@@ -32,7 +32,7 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(
+   '(javascript
      (go :variables go-tab-width 4)
      (c-c++
       :variables
@@ -55,7 +55,8 @@ This function should only modify configuration layer settings."
      lsp
      markdown
      multiple-cursors
-     org
+     (org :variables
+          org-enable-hugo-support t)
      gtags
      themes-megapack
      osx
@@ -71,6 +72,7 @@ This function should only modify configuration layer settings."
      ;; version-control
      treemacs
      mylayer
+     esay-hugo
      )
 
 
@@ -550,6 +552,112 @@ before packages are loaded."
   (key-chord-mode 1)
   (define-key evil-normal-state-map (kbd ",f") 'fzf)
   (doom-themes-treemacs-config)
+  ;; 这里额外启用了 :box t 属性使得提示更加明显
+  (defconst hideshow-folded-face '((t (:inherit 'font-lock-comment-face :box t))))
+
+  (defun hideshow-folded-overlay-fn (ov)
+    (when (eq 'code (overlay-get ov 'hs))
+      (let* ((nlines (count-lines (overlay-start ov) (overlay-end ov)))
+             (info (format " ... #%d " nlines)))
+        (overlay-put ov 'display (propertize info 'face hideshow-folded-face)))))
+
+  (setq hs-set-up-overlay 'hideshow-folded-overlay-fn)
+      ;;                    ___ _____ ___
+    ;;  ___ _ _ __ _   / __|_   _|   \
+    ;; / _ \ '_/ _` | | (_ | | | | |) |
+    ;; \___/_| \__, |  \___| |_| |___/
+    ;;         |___/
+
+
+  ;; 自定义 agenda的模板
+  (setq org-agenda-files '("~/org/gtd/"))
+  (setq org-agenda-custom-commands
+        '(
+          ("w" . "任务安排")
+          ("wa" "重要且紧急的任务" tags-todo "+PRIORITY=\"A\"")
+          ("wb" "重要且不紧急的任务" tags-todo "-weekly-monthly-daily+PRIORITY=\"B\"")
+          ("wc" "不重要且紧急的任务" tags-todo "+PRIORITY=\"C\"")
+          ("W" "Weekly Review"
+           ((stuck "") ;; review stuck projects as designated by org-stuck-projects
+            (tags-todo "project")
+            (tags-todo "daily")
+            (tags-todo "school")
+            (tags-todo "code")
+            (tags-todo "theory")
+            ))
+          ))
+  (define-key global-map "\C-ca" 'org-agenda)
+
+  ;; 自定义capture的模板
+  (defvar org-agenda-dir "" "gtd org files location")
+  (setq-default org-agenda-dir "~/org/gtd/")
+  (setq org-agenda-file-note (expand-file-name "notes.org" org-agenda-dir))
+  (setq org-agenda-file-task (expand-file-name "task.org" org-agenda-dir))
+  (setq org-agenda-file-calendar (expand-file-name "calendar.org" org-agenda-dir))
+  (setq org-agenda-file-finished (expand-file-name "finished.org" org-agenda-dir))
+  (setq org-agenda-file-canceled (expand-file-name "canceled.org" org-agenda-dir))
+
+  (define-key global-map "\C-cc" 'org-capture)
+  (setq org-capture-templates
+        '(
+          ("t" "Todo" entry (file+headline org-agenda-file-task "Work")
+           "* TODO [#A] %?\n  %i\n"
+           :empty-lines 1)
+          ("l" "Tolearn" entry (file+headline org-agenda-file-task "Learning")
+           "* TODO [#B] %?\n  %i\n"
+           :empty-lines 1)
+          ;; ("h" "Toplay" entry (file+headline org-agenda-file-task "Hobbies")
+          ;;  "* TODO [#C] %?\n  %i\n"
+          ;;  :empty-lines 1)
+          ("o" "Todo_others" entry (file+headline org-agenda-file-task "Others")
+           "* TODO [#C] %?\n  %i\n"
+           :empty-lines 1)
+          ("n" "notes" entry (file+headline org-agenda-file-note "Quick notes")
+           "* %?\n  %i\n %U"
+           :empty-lines 1)
+          ;; ("i" "ideas" entry (file+headline org-agenda-file-note "Quick ideas")
+          ;;  "* %?\n  %i\n %U"
+          ;;  :empty-lines 1)
+          )
+        )
+
+  ;; 定义转接
+  (define-key global-map "\C-cr" 'org-refile)
+  (setq org-refile-targets  '((org-agenda-file-finished :maxlevel . 1)
+                             (org-agenda-file-canceled :maxlevel . 1)
+                             ))
+
+  ;; 番茄时钟计时
+  (require 'org-pomodoro)
+
+  ;;              _
+  ;;  ___ _ _  __| |
+  ;; / -_) ' \/ _` |
+  ;; \___|_||_\__,_|
+  (with-eval-after-load 'org-capture
+    (defun org-hugo-new-subtree-post-capture-template ()
+      "Return `org-capture' template string for new Hugo post."
+      (let* ((date (format-time-string (org-time-stamp-format :long :inactive) (org-current-time)))
+             (title (read-from-minibuffer "Post Title: "))
+             (file-name (read-from-minibuffer "File Name: "))
+             (fname (org-hugo-slug file-name)))
+        (mapconcat #'identity
+                   `(
+                     ,(concat "* TODO " title)
+                     ":PROPERTIES:"
+                     ,(concat ":EXPORT_FILE_NAME: " fname)
+                     ,(concat ":EXPORT_DATE: " date)
+                     ":END:"
+                     "%?\n")
+                   "\n")))
+    (add-to-list 'org-capture-templates
+                 '("h"
+                   "Hugo post"
+                   entry
+                   (file+headline "~/hugo/org/hugo-posts.org" "Learning")
+                   (function org-hugo-new-subtree-post-capture-template))))
+  (setq mac-command-modifier 'super) ; make cmd key do Meta
+  (setq mac-option-modifier 'meta) ; make opt key do Super
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -565,8 +673,12 @@ This function is called at the very end of Spacemacs initialization."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(evil-want-Y-yank-to-eol nil)
+ '(git-gutter:added-sign "☀")
+ '(git-gutter:deleted-sign "☂")
+ '(git-gutter:modified-sign "☁")
+ '(git-gutter:window-width 2)
  '(package-selected-packages
-   '(git-gutter tramp-term zenburn-theme zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monokai-theme monochrome-theme molokai-theme moe-theme modus-vivendi-theme modus-operandi-theme minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme light-soap-theme kaolin-themes jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flatui-theme flatland-theme farmhouse-theme eziam-theme exotica-theme espresso-theme dracula-theme doom-themes django-theme darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme chocolate-theme autothemer cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme ggo-mode helm-gtags godoctor go-tag go-rename go-impl go-guru go-gen-test go-fill-struct go-eldoc ggtags flycheck-golangci-lint dap-mode bui counsel-gtags counsel swiper ivy company-go go-mode yasnippet-snippets treemacs-magit smeargle orgit org-rich-yank org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download org-cliplink org-brain mmm-mode markdown-toc magit-svn magit-section magit-gitflow magit-popup lsp-ui lsp-treemacs lsp-origami origami htmlize helm-org-rifle helm-lsp lsp-mode dash-functional helm-gitignore helm-git-grep helm-company helm-c-yasnippet gnuplot gitignore-templates gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md fuzzy forge markdown-mode ghub closql emacsql-sqlite emacsql treepy flycheck-pos-tip pos-tip evil-org evil-magit magit git-commit with-editor transient company auto-yasnippet yasnippet ac-ispell auto-complete ws-butler writeroom-mode winum which-key volatile-highlights vi-tilde-fringe valign uuidgen use-package undo-tree treemacs-projectile treemacs-persp treemacs-icons-dired treemacs-evil toc-org symon symbol-overlay string-inflection spaceline-all-the-icons restart-emacs request rainbow-delimiters popwin pcre2el password-generator paradox overseer org-superstar open-junk-file nameless move-text macrostep lorem-ipsum link-hint indent-guide hybrid-mode hungry-delete hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-xref helm-themes helm-swoop helm-purpose helm-projectile helm-org helm-mode-manager helm-make helm-ls-git helm-flx helm-descbinds helm-ag google-translate golden-ratio font-lock+ flycheck-package flycheck-elsa flx-ido fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-textobj-line evil-surround evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-easymotion evil-cleverparens evil-args evil-anzu eval-sexp-fu emr elisp-slime-nav editorconfig dumb-jump dotenv-mode dired-quick-sort diminish devdocs define-word column-enforce-mode clean-aindent-mode centered-cursor-mode auto-highlight-symbol auto-compile aggressive-indent ace-link ace-jump-helm-line)))
+   '(web-beautify tern prettier-js nodejs-repl livid-mode skewer-mode js2-refactor multiple-cursors js2-mode js-doc import-js grizzl impatient-mode simple-httpd helm helm-core add-node-modules-path ox-hugo origami-predef git-gutter tramp-term zenburn-theme zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monokai-theme monochrome-theme molokai-theme moe-theme modus-vivendi-theme modus-operandi-theme minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme light-soap-theme kaolin-themes jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flatui-theme flatland-theme farmhouse-theme eziam-theme exotica-theme espresso-theme dracula-theme doom-themes django-theme darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme chocolate-theme autothemer cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme ggo-mode helm-gtags godoctor go-tag go-rename go-impl go-guru go-gen-test go-fill-struct go-eldoc ggtags flycheck-golangci-lint dap-mode bui counsel-gtags counsel swiper ivy company-go go-mode yasnippet-snippets treemacs-magit smeargle orgit org-rich-yank org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download org-cliplink org-brain mmm-mode markdown-toc magit-svn magit-section magit-gitflow magit-popup lsp-ui lsp-treemacs lsp-origami origami htmlize helm-org-rifle helm-lsp lsp-mode dash-functional helm-gitignore helm-git-grep helm-company helm-c-yasnippet gnuplot gitignore-templates gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md fuzzy forge markdown-mode ghub closql emacsql-sqlite emacsql treepy flycheck-pos-tip pos-tip evil-org evil-magit magit git-commit with-editor transient company auto-yasnippet yasnippet ac-ispell auto-complete ws-butler writeroom-mode winum which-key volatile-highlights vi-tilde-fringe valign uuidgen use-package undo-tree treemacs-projectile treemacs-persp treemacs-icons-dired treemacs-evil toc-org symon symbol-overlay string-inflection spaceline-all-the-icons restart-emacs request rainbow-delimiters popwin pcre2el password-generator paradox overseer org-superstar open-junk-file nameless move-text macrostep lorem-ipsum link-hint indent-guide hybrid-mode hungry-delete hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-xref helm-themes helm-swoop helm-purpose helm-projectile helm-org helm-mode-manager helm-make helm-ls-git helm-flx helm-descbinds helm-ag google-translate golden-ratio font-lock+ flycheck-package flycheck-elsa flx-ido fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-textobj-line evil-surround evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-easymotion evil-cleverparens evil-args evil-anzu eval-sexp-fu emr elisp-slime-nav editorconfig dumb-jump dotenv-mode dired-quick-sort diminish devdocs define-word column-enforce-mode clean-aindent-mode centered-cursor-mode auto-highlight-symbol auto-compile aggressive-indent ace-link ace-jump-helm-line)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

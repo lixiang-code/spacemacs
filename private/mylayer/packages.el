@@ -34,6 +34,8 @@
     snmp-mode
     key-chord
     fzf
+    evil-magit
+    leetcode
     )
   "The list of Lisp packages required by the mylayer layer.
 
@@ -78,4 +80,21 @@ Each entry is either:
   (use-package fzf
     :defer t
     ))
+
+(defun mylayer/init-evil-magit ()
+  (use-package evil-magit
+    :defer t
+    :init (add-hook 'spacemacs-editing-style-hook
+                    'spacemacs//magit-evil-magit-bindings)))
+
+(defun mylayer/init-leetcode ()
+  (use-package leetcode
+    :defer t
+    :init
+    (setq leetcode-prefer-language "golang"
+          leetcode-prefer-sql "mysql"
+          leetcode-save-solutions t
+          leetcode-directory "~/gospace/leetcode")
+  ))
+
 ;;; packages.el ends here

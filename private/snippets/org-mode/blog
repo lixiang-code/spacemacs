@@ -1,0 +1,27 @@
+# -*- mode: snippet -*-
+# name: blog
+# key: blog
+# --
+#+HUGO_BASE_DIR: ~/hugo/blog/
+#+HUGO_SECTION: post/
+#+HUGO_WEIGHT: auto
+#+HUGO_AUTO_SET_LASTMOD: t
+#+hugo_custom_front_matter: :toc true
+#+OPTIONS: author:nil
+#+hugo_categories: $2
+#+TITLE: $1
+
+#+HUGO_TAGS: $3
+#+HUGO_DRAFT: false
+
+${4:摘要}
+
+#+hugo: more
+
+${5:正文}
+
+* Footnotes
+* COMMENT Local Variables                          :ARCHIVE:
+# Local Variables:
+# org-hugo-auto-export-on-save: t
+# End:

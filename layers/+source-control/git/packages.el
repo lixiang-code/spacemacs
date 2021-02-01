@@ -11,7 +11,7 @@
 
 (setq git-packages
       '(
-        evil-magit
+        ;; evil-magit
         fill-column-indicator
         ;; forge requires a C compiler on Windows so we disable
         ;; it by default on Windows.
@@ -59,11 +59,11 @@
       "<normal-state> g s" nil
       "<visual-state> g s" nil)))
 
-(defun git/init-evil-magit ()
-  (use-package evil-magit
-    :defer t
-    :init (add-hook 'spacemacs-editing-style-hook
-                    'spacemacs//magit-evil-magit-bindings)))
+;; (defun git/init-evil-magit ()
+;;   (use-package evil-magit
+;;     :defer t
+;;     :init (add-hook 'spacemacs-editing-style-hook
+;;                     'spacemacs//magit-evil-magit-bindings)))
 
 (defun git/post-init-fill-column-indicator ()
   (add-hook 'git-commit-mode-hook 'fci-mode))
