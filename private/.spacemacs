@@ -550,7 +550,7 @@ before packages are loaded."
   (key-chord-define evil-insert-state-map "jj" 'evil-normal-state)
   (key-chord-define evil-insert-state-map "jk" (lambda () (interactive) (save-buffer) (evil-normal-state)))
   (key-chord-mode 1)
-  (define-key evil-normal-state-map (kbd ",f") 'fzf)
+  (define-key evil-normal-state-map (kbd ",f") 'counsel-fzf)
   (doom-themes-treemacs-config)
   ;; 这里额外启用了 :box t 属性使得提示更加明显
   (defconst hideshow-folded-face '((t (:inherit 'font-lock-comment-face :box t))))
